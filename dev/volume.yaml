@@ -1,0 +1,116 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 10Gi
+  accessModes:
+  - ReadWriteMany
+  nfs:
+    server: 192.168.100.36
+    #server: 10.128.0.4
+    path: "/DATA-DEV/"
+    #path: "/"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nfs
+spec:
+  accessModes:
+  - ReadWriteMany
+  storageClassName: "manual"
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: cms-db-pv
+  labels:
+    name: cms-db-pv
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 2Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  hostPath:
+    path: "/mnt/cms-db"
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: cms-pv
+  labels:
+    name: cms-pv
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 2Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  hostPath:
+    path: "/mnt/cms"
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: zoo1-pv
+  labels:
+    app: zookeeper
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 2Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  hostPath:
+    path: "/mnt/zoo1"
+    type: Directory
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: zoo2-pv
+  labels:
+    app: zookeeper
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 2Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  hostPath:
+    path: "/mnt/zoo2"
+    type: Directory
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: zoo3-pv
+  labels:
+    app: zookeeper
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 2Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  hostPath:
+    path: "/mnt/zoo3"
+    type: Directory

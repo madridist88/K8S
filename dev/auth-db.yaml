@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-db-service
+  labels:
+    name: auth-db-service
+    app: auth
+spec:
+  type: NodePort
+  ports:
+  - port: 3306
+    nodePort: 33308
+    name: mysql
+  selector:
+    name: auth-db
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-db-deployment
+  labels:
+    name: auth-db-deployment
+    app: auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: auth-db
+  template:
+    metadata:
+      labels:
+        app: auth
+        name: auth-db
+    spec:
+      containers:
+      - name: auth-db
+        image: mysql:5.6
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "pwd"
+        - name: MYSQL_ALLOW_EMPTY_PASSWORD
+          value: "no"
+        - name: MYSQL_DATABASE
+          value: "auth"
+        - name: MYSQL_USER
+          value: "auth_user"
+        - name: MYSQL_PASSWORD
+          value: "pwd"
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+        #      - mountPath: /var/lib/mysql
+        #        name: cms-db-storage
+        - mountPath: /docker-entrypoint-initdb.d
+          name: nfs
+          subPath: auth-service/mysql/sql
+        - mountPath: /etc/mysql/conf.d
+          name: nfs
+          subPath: auth-service/mysql/db-config
+      volumes:
+      - name: nfs
+        persistentVolumeClaim:
+          claimName: nfs

@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch-service
+  labels:
+    name: elasticsearch-service
+    app: elk
+spec:
+  type: NodePort
+  ports:
+  - port: 9200
+    nodePort: 9200
+    name: http
+  - port: 9300
+    nodePort: 9300
+    name: https
+  selector:
+    name: elasticsearch
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana-service
+  labels:
+    name: kibana-service
+    app: elk
+spec:
+  type: NodePort
+  ports:
+  - port: 5601
+    nodePort: 5601
+    name: http
+  selector:
+    name: kibana
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana-deployment
+  labels:
+    name: kibana-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: kibana
+  template:
+    metadata:
+      labels:
+        app: elk
+        name: kibana
+    spec:
+      containers:
+      - name: kibana
+        image: kibana:4.6.6
+        imagePullPolicy: Always
+        env:
+        - name: ELASTICSEARCH_URL
+          value: "http://elasticsearch-service:9200"
+        ports:
+        - containerPort: 5601
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch-deployment
+  labels:
+    name: elasticsearch-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elk
+        name: elasticsearch
+    spec:
+      containers:
+      - name: elasticsearch
+        image: elasticsearch:2.4.6
+        imagePullPolicy: Always
+        env:
+        - name: cluster.name
+          value: "elastic-cluster.ru"
+        - name: http.host
+          value: "0.0.0.0"
+        - name: transport.host
+          value: "127.0.0.1"
+        - name: xpack.security.enabled
+          value: "false"
+        - name: ES_JAVA_OPTS
+          value: "-Xms512m -Xmx750m"
+        ports:
+        - containerPort: 9200
+        - containerPort: 9300
+        volumeMounts:
+          - mountPath: /usr/share/elasticsearch/data
+            name: nfs
+            subPath: elasticsearch/data
+      volumes:
+      - name: nfs
+        persistentVolumeClaim:
+          claimName: nfs

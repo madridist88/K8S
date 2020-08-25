@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cms-db-service
+  labels:
+    name: cms-db-service
+    app: cms
+spec:
+  type: NodePort
+  ports:
+  - port: 3306
+    nodePort: 33309
+    name: mysql
+  selector:
+    name: cms-db
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cms-db-deployment
+  labels:
+    name: cms-db-deployment
+    app: cms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: cms-db
+  template:
+    metadata:
+      labels:
+        app: cms
+        name: cms-db
+    spec:
+      containers:
+      - name: cms-db
+        image: mysql:5.6
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "pwd"
+        - name: MYSQL_ALLOW_EMPTY_PASSWORD
+          value: "no"
+        - name: MYSQL_DATABASE
+          value: "cms"
+        - name: MYSQL_USER
+          value: "cms_user"
+        - name: MYSQL_PASSWORD
+          value: "pwd"
+        ports:
+        - containerPort: 3306
+        volumeMounts:
+    #      - mountPath: /var/lib/mysql
+    #        name: cms-db-storage
+          - mountPath: /docker-entrypoint-initdb.d
+            name: nfs
+            subPath: cms/mysql/sql
+          - mountPath: /etc/mysql/conf.d
+            name: nfs
+            subPath: cms/mysql/db-config
+      volumes:
+        - name: nfs
+          persistentVolumeClaim:
+            claimName: nfs

@@ -1,0 +1,139 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cms-php-service
+  labels:
+    app: cms
+    version: "18.09"
+spec:
+  type: NodePort
+  ports:
+  - port: 9000
+    name: server
+    nodePort: 39000
+  selector:
+    name: cms-php
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cms-php-deployment
+  labels:
+    name: cms-php-deployment
+    app: cms
+    version: "18.09"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      name: cms-php
+  template:
+    metadata:
+      labels:
+        app: cms-php
+        name: cms-php
+        version: "18.09"
+    spec:
+      containers:
+      - name: cms-php
+        image: hub.ru:4567/b2c/cms/php-fpm:dev
+        imagePullPolicy: Always
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: YII_DEBUG
+          value: "true"
+        - name: YII_ENV
+          value: "dev"
+        - name: LINK_ASSETS
+          value: "false"
+        - name: DB_DSN
+          value: "mysql:host=cms-db-service;port=3306;dbname=cms"
+        - name: DB_USERNAME
+          value: root
+        - name: DB_PASSWORD
+          value: pwd
+        - name: TEST_DB_DSN
+          value: "mysql:host=cms-db-service;port=3306;dbname=cms"
+        - name: TEST_DB_USERNAME
+          value: root
+        - name: TEST_DB_PASSWORD
+          value: pwd
+        - name: TEXT_EN
+          value: "/web/text_cache/en.json"
+        - name: TEXT_RU
+          value: "/web/text_cache/ru.json"
+        - name: TEXT_URL
+          value: "/web/text_cache/"
+        - name: FRONTEND_URL
+          value: "http://dev.ru"
+        - name: BACKEND_URL
+          value: "http://cms.dev.ru"
+        - name: STORAGE_URL
+          value: "http://storage.dev.ru"
+        - name: SMTP_HOST
+          value: mailcatcher
+        - name: SMTP_PORT
+          value: "1025"
+        - name: FRONTEND_COOKIE_VALIDATION_KEY
+          value: "123456789"
+        - name: BACKEND_COOKIE_VALIDATION_KEY
+          value: "123456789"
+        - name: GLIDE_SIGN_KEY
+          value: ""
+        - name: GLIDE_MAX_IMAGE_SIZE
+          value: "4000000"
+        - name: UPLOAD_DIR
+          value: "@storage/web/source"
+        - name: BASE_URL
+          value: "https://storage.dev.ru"
+        - name: CROP_SMALL_W
+          value: "209"
+        - name: CROP_SMALL_H
+          value: "200"
+        - name: CROP_BIG_W
+          value: "433"
+        - name: CROP_BIG_H
+          value: "256"
+        - name: STEP_CREATE_CACHE
+          value: "50"
+        - name: MKDIR_PERMISSION
+          value: "0744"
+        - name: SECTION_NEWS
+          value: "68"
+        - name: CACHE_NAME
+          value: cache
+        - name: CACHE_NAME_LANGS
+          value: langs
+        - name: CACHE_NAME_MAILS
+          value: mails
+        - name: CACHE_NAME_COUNTRYS
+          value: countrys
+        ports:
+        - containerPort: 9000
+        volumeMounts:
+        - mountPath: /app/upload
+          name: nfs
+          subPath: cms/upload
+        - mountPath: /app/storage
+          name: nfs
+          subPath: cms/storage
+        - mountPath: /app/backend/web/assets
+          name: nfs
+          subPath: cms/backend/web/assets
+        - mountPath: /app/frontend/web/text_cache
+          name: nfs
+          subPath: cms/frontend/web/text_cache
+      imagePullSecrets:
+      - name: registry-cred
+      restartPolicy: Always
+      volumes:
+      - name: nfs
+        persistentVolumeClaim:
+          claimName: nfs
